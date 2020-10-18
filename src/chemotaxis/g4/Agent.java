@@ -4,6 +4,7 @@ import java.util.Map;
 
 import chemotaxis.sim.DirectionType;
 import chemotaxis.sim.ChemicalCell;
+import chemotaxis.sim.ChemicalCell.ChemicalType;
 import chemotaxis.sim.Move;
 import chemotaxis.sim.SimPrinter;
 
@@ -31,8 +32,19 @@ public class Agent extends chemotaxis.sim.Agent {
     */
    @Override
    public Move makeMove(Integer randomNum, Byte previousState, ChemicalCell currentCell, Map<DirectionType, ChemicalCell> neighborMap) {
-      // TODO add your code here to move the agent
+      Move move = new Move();
+      move.currentState = previousState;
+    
+      ChemicalType chosenChemicalType = ChemicalType.BLUE;
+      
+      for(DirectionType directionType : neighborMap.keySet()) {
+         if (neighborMap.get(directionType).getConcentration(chosenChemicalType) == 1) {
+            move.currentState = (byte)directionType.ordinal();
+         }
+       }
 
-      return null; // TODO modify the return statement to return your agent move
+      move.directionType = DirectionType.values()[move.currentState];      
+      return move;
+
    }
 }
