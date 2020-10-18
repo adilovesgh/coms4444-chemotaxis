@@ -47,8 +47,8 @@ public class Simulator {
 	
 	// Defaults
 	private static boolean validMap = true;
-	private static boolean enableControllerPrints = false;
-	private static boolean enableAgentPrints = false;
+	private static boolean enableControllerPrints = true;
+	private static boolean enableAgentPrints = true;
 	private static int chemicalsRemaining = budget;
 	private static Point start, target, agentLocation;
 	private static List<Point> blockedLocations;
