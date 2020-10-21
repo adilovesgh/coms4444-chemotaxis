@@ -11,89 +11,16 @@ import chemotaxis.sim.ChemicalCell.ChemicalType;
 public class Agent extends chemotaxis.sim.Agent {
 	
 
-	/**
-	* Agent constructor
-	*
-	* @param simPrinter  simulation printer
-	*
-	*/
-	public Agent(SimPrinter simPrinter) {
-		super(simPrinter);
-	}
+   /**
+    * Agent constructor
+    *
+    * @param simPrinter  simulation printer
+    *
+    */
+   public Agent(SimPrinter simPrinter) {
+      super(simPrinter);
+   }
 
-<<<<<<< HEAD
-	/**
-	* Move agent
-	*
-	* @param randomNum        random number available for agents
-	* @param previousState    byte of previous state
-	* @param currentCell      current cell
-	* @param neighborMap      map of cell's neighbors
-	* @return                 agent move
-	*
-	*/
-
-	@Override
-	public Move makeMove(Integer randomNum, Byte previousState, ChemicalCell currentCell, Map<DirectionType, ChemicalCell> neighborMap) {
-		
-		Move move = new Move();
-
-		/*
-		 * Bit flags:
-		 * 0: Last Move: 	0 =	North 	1 =	South
-		 * 1: Last Move: 	0 =	East 	1 =	West
-		 * 2: Color Type:	[0		[1		[0		 [1
-		 * 3: Color Type: 	 0] Red 0] Blue 1] Green 1] Any
-		 * 4: undecided
-		 * 5: undecided
-		 * 6: 
-		 * 7: 
-		 */
-
-		ChemicalType chosenChemicalType = ChemicalType.RED;
-
-		ChemicalType currentColor = AgentMemory.getColor(previousState, move.currentState);
-	
-
-		boolean atHighest = true;
-		boolean allZero = true;
-		double highestConcentration = currentCell.getConcentration(currentColor);
-		for(DirectionType directionType : neighborMap.keySet()) {
-			double neighborConcentration = neighborMap.get(directionType).getConcentration(chosenChemicalType);
-			//System.out.println("for loop, neighborConcentration: "+neighborConcentration);
-			//System.out.println("for loop, directionType: "+directionType);
-			if(highestConcentration < neighborConcentration) {
-				highestConcentration = neighborConcentration;
-				move.directionType = directionType;
-				move.currentState = previousState;
-				atHighest = false;
-			}
-			if (neighborConcentration > 0.01) {
-				allZero = false;
-			}
-		}
-		if (atHighest) {
-			move.directionType = DirectionType.CURRENT;
-			if (!allZero) {
-				move.currentState = (byte) (previousState + 1);
-				if (move.currentState >= 3) {
-					move.currentState = 0;
-				}
-			}
-			else {
-				move.currentState = previousState;
-			}
-		}
-
-		//System.out.println("Chemical Type: "+chosenChemicalType);
-		//System.out.println("highestConcentration: "+highestConcentration);
-		//System.out.println("direction: "+move.directionType);
-		System.out.println("PreviousState: "+previousState);
-		System.out.println("CurrentState: "+move.currentState);
-		return move;
-	}
-}
-=======
    /**
     * Move agent
     *
@@ -141,7 +68,7 @@ public class Agent extends chemotaxis.sim.Agent {
 		   } else if (green == 1.0) {
 			   move = turnRight(move, previousState);
 		   } else {
-			   move = straight(move, previousState);
+			   move = defaultMove(move, previousState, neighborMap);
 		   }
 	   }
 
@@ -196,5 +123,98 @@ public class Agent extends chemotaxis.sim.Agent {
 	   move.currentState = previousState;
 	   return move;
    }
+   
+   public Move defaultMove(Move move, Byte previousState, Map<DirectionType, ChemicalCell> neighborMap) {
+	   //1: I'm moving NORTH
+	   //2: I'm moving EAST
+	   //3: I'm moving SOUTH
+	   //4: I'm moving WEST
+	   if (previousState == 1) {
+		   ChemicalCell headCell = neighborMap.get(DirectionType.NORTH);
+		   ChemicalCell rightCell = neighborMap.get(DirectionType.EAST);
+		   if (headCell.isBlocked()) {
+			   if (rightCell.isBlocked()) {
+				   ChemicalCell leftCell = neighborMap.get(DirectionType.WEST);
+				   if (leftCell.isBlocked()) {
+					   move.directionType = DirectionType.SOUTH;
+					   move.currentState = 3;
+				   } else {
+					   move.directionType = DirectionType.WEST;
+					   move.currentState = 4;
+				   }
+			   } else {
+				   move.directionType = DirectionType.EAST;
+				   move.currentState = 2;
+			   }
+		   } else {
+			   move.directionType = DirectionType.NORTH;
+			   move.currentState = previousState;
+		   }
+	   } else if (previousState == 2) {
+		   ChemicalCell headCell = neighborMap.get(DirectionType.EAST);
+		   ChemicalCell rightCell = neighborMap.get(DirectionType.SOUTH);
+		   if (headCell.isBlocked()) {
+			   if (rightCell.isBlocked()) {
+				   ChemicalCell leftCell = neighborMap.get(DirectionType.NORTH);
+				   if (leftCell.isBlocked()) {
+					   move.directionType = DirectionType.WEST;
+					   move.currentState = 4;
+				   } else {
+					   move.directionType = DirectionType.NORTH;
+					   move.currentState = 1;
+				   }
+			   } else {
+				   move.directionType = DirectionType.SOUTH;
+				   move.currentState = 3;
+			   }
+		   } else {
+			   move.directionType = DirectionType.EAST;
+			   move.currentState = previousState;
+		   }
+	   } else if (previousState == 3) {
+		   ChemicalCell headCell = neighborMap.get(DirectionType.SOUTH);
+		   ChemicalCell rightCell = neighborMap.get(DirectionType.WEST);
+		   if (headCell.isBlocked()) {
+			   if (rightCell.isBlocked()) {
+				   ChemicalCell leftCell = neighborMap.get(DirectionType.EAST);
+				   if (leftCell.isBlocked()) {
+					   move.directionType = DirectionType.NORTH;
+					   move.currentState = 1;
+				   } else {
+					   move.directionType = DirectionType.EAST;
+					   move.currentState = 2;
+				   }
+			   } else {
+				   move.directionType = DirectionType.WEST;
+				   move.currentState = 4;
+			   }
+		   } else {
+			   move.directionType = DirectionType.SOUTH;
+			   move.currentState = previousState;
+		   }
+	   } else if (previousState == 4) {
+		   ChemicalCell headCell = neighborMap.get(DirectionType.WEST);
+		   ChemicalCell rightCell = neighborMap.get(DirectionType.NORTH);
+		   if (headCell.isBlocked()) {
+			   if (rightCell.isBlocked()) {
+				   ChemicalCell leftCell = neighborMap.get(DirectionType.SOUTH);
+				   if (leftCell.isBlocked()) {
+					   move.directionType = DirectionType.EAST;
+					   move.currentState = 2;
+				   } else {
+					   move.directionType = DirectionType.SOUTH;
+					   move.currentState = 3;
+				   }
+			   } else {
+				   move.directionType = DirectionType.NORTH;
+				   move.currentState = 1;
+			   }
+		   } else {
+			   move.directionType = DirectionType.WEST;
+			   move.currentState = previousState;
+		   }
+	   }
+	   
+	   return move;
+   }
 }
->>>>>>> upstream/master

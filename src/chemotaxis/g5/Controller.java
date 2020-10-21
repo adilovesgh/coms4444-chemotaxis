@@ -19,7 +19,7 @@ public class Controller extends chemotaxis.sim.Controller {
 
 	List<Point> routeList = new ArrayList<Point>();
 	List<Integer> corners = new ArrayList<Integer>();
-	int previousDirection;
+	//int previousDirection;
 	boolean endReached = false;
 	/**
 	 * Controller constructor
@@ -68,6 +68,19 @@ public class Controller extends chemotaxis.sim.Controller {
  				System.out.println(p.x+" "+p.y);
  			}*/
  			corners = getCorners(routeList);
+ 			
+ 			System.out.println("Corners before");
+ 			for (int i: corners) {
+ 				Point p = routeList.get(i);
+ 				System.out.println(i+ ": "+p.x+" "+p.y);
+ 			}
+ 			corners = getCornersImproved(routeList, corners, grid);
+ 			System.out.println("Corners after");
+ 			for (int i: corners) {
+ 				Point p = routeList.get(i);
+ 				System.out.println(i+ ": "+p.x+" "+p.y);
+ 			}
+ 			
  			int needChemicals = corners.size()+1;
  			if (needChemicals > chemicalsRemaining) {
  				simPrinter.println("No enough chemicals, need: "+needChemicals+", have: "+chemicalsRemaining);
@@ -83,20 +96,8 @@ public class Controller extends chemotaxis.sim.Controller {
  			if (initialDirection != 4) {
  				chemicalPlacement.location = currentLocation;
  			}
- 			previousDirection = initialDirection;
+ 			//previousDirection = initialDirection;
  		}
-<<<<<<< HEAD
-
-		else if (currentLocation.equals(routeList.get(lastSpotIndex)) && !(routeList.get(lastSpotIndex).equals(target))) {
-			nextCorner = getNextCorner();
-			//simPrinter.println("nextCorner: " + nextCorner.x + " " + nextCorner.y);
-			setNextPlacement(nextCorner, chemicalPlacement, chemicals);
-		}
-
-		//else if (endReached)
-			//simPrinter.println("Turn: " + currentTurn + "  at: " + currentLocation.x + " " + currentLocation.y);
-
-=======
 		else {
 			int corner = -1;
 			for (int i: corners) {
@@ -106,6 +107,8 @@ public class Controller extends chemotaxis.sim.Controller {
 			}
 			if (corner != -1) {
 				Point next = routeList.get(corner+1);
+				Point pre = routeList.get(corner-1);
+				int previousDirection = nextDirection(currentLocation, pre);
 				int nextDirection = nextDirection(next, currentLocation);
 				if (previousDirection - nextDirection == 1 || previousDirection - nextDirection == -3) {
 					chemicalPlacement.chemicals.add(ChemicalType.RED);
@@ -117,7 +120,6 @@ public class Controller extends chemotaxis.sim.Controller {
 			}
 		}
 
->>>>>>> upstream/master
 		return chemicalPlacement;
 	}
 	
@@ -131,6 +133,59 @@ public class Controller extends chemotaxis.sim.Controller {
 			}
 		}
 		return corners;
+	}
+	
+	public List<Integer> getCornersImproved(List<Point> path, List<Integer> corners, ChemicalCell[][] grid) {
+		//1: I'm moving NORTH
+		//2: I'm moving EAST
+		//3: I'm moving SOUTH
+		//4: I'm moving WEST
+		
+		List<Integer> newCorners = new ArrayList<Integer>();
+		for (int i: corners) {
+			Point corner = path.get(i);
+			Point prePoint = path.get(i-1);
+			Point postPoint = path.get(i+1);
+			int preDirection = nextDirection(corner, prePoint);
+			int postDirection = nextDirection(postPoint, corner);
+			
+			//System.out.println("corner: "+i+ ": "+corner.x+ " "+ corner.y);
+			//System.out.println("preDirection: "+preDirection+ "; postDirection: "+postDirection);
+			//System.out.println(corner.x-2 < 0 || grid[corner.x-2][corner.y-1].isBlocked());
+			//System.out.println(corner.y >= grid[0].length || grid[corner.x-1][corner.y].isBlocked());
+			//System.out.println(corner.x >= grid.length || grid[corner.x][corner.y-1].isBlocked());
+			//System.out.println(corner.y-2 < 0 || grid[corner.x-1][corner.y-2].isBlocked());
+			
+			if (preDirection == 1 && (corner.x-2 < 0 || grid[corner.x-2][corner.y-1].isBlocked())) {
+				
+				//System.out.println("Left and right open: "+(!(corner.y >= grid[0].length || grid[corner.x-1][corner.y].isBlocked()) && !(corner.y-2 < 0 || grid[corner.x-1][corner.y-2].isBlocked())));
+				if (preDirection - postDirection == -3 && !(corner.y >= grid[0].length || grid[corner.x-1][corner.y].isBlocked()) && !(corner.y-2 < 0 || grid[corner.x-1][corner.y-2].isBlocked())) {
+					newCorners.add(i);
+				}
+			} else if (preDirection == 2 && (corner.y >= grid[0].length || grid[corner.x-1][corner.y].isBlocked())) {
+				
+				//System.out.println("Left and right open: "+(!(corner.x >= grid.length || grid[corner.x][corner.y-1].isBlocked()) && !(corner.x-2 < 0 || grid[corner.x-2][corner.y-1].isBlocked())));
+				if (preDirection - postDirection == 1 && !(corner.x >= grid.length || grid[corner.x][corner.y-1].isBlocked()) && !(corner.x-2 < 0 || grid[corner.x-2][corner.y-1].isBlocked())) {
+					newCorners.add(i);
+				}
+			} else if (preDirection == 3 && (corner.x >= grid.length || grid[corner.x][corner.y-1].isBlocked())) {
+				
+				//System.out.println("Left and right open: "+(!(corner.y-2 < 0 || grid[corner.x-1][corner.y-2].isBlocked()) && !(corner.y >= grid[0].length || grid[corner.x-1][corner.y].isBlocked())));
+				if (preDirection - postDirection == 1 && !(corner.y-2 < 0 || grid[corner.x-1][corner.y-2].isBlocked()) && !(corner.y >= grid[0].length || grid[corner.x-1][corner.y].isBlocked())) {
+					newCorners.add(i);
+				}
+			} else if (preDirection == 4 && (corner.y-2 < 0 || grid[corner.x-1][corner.y-2].isBlocked())) {
+				
+				//System.out.println("Left and right open: "+(!(corner.x-2 < 0 || grid[corner.x-2][corner.y-1].isBlocked()) && !(corner.x >= grid.length || grid[corner.x][corner.y-1].isBlocked())));
+				if (preDirection - postDirection == 1 && !(corner.x-2 < 0 || grid[corner.x-2][corner.y-1].isBlocked()) && !(corner.x >= grid.length || grid[corner.x][corner.y-1].isBlocked())) {
+					newCorners.add(i);
+				}
+			} else {
+				newCorners.add(i);
+			}
+			
+		}
+		return newCorners;
 	}
 	
 	public int nextDirection(Point next, Point currentLocation) {
@@ -411,39 +466,5 @@ public class Controller extends chemotaxis.sim.Controller {
 			this.turned = turned;
 			this.depth = depth;
 		}
-<<<<<<< HEAD
-
-		chemicalPlacement.location = nextSpot;
-		lastSpotIndex = routeList.indexOf(nextSpot);
-		//simPrinter.println("Drop Point: " +nextSpot.x + " " + nextSpot.y + " At: " + lastSpotIndex);
-
-		switch (colorIndex) {
-			case 0: chemicals.add(ChemicalType.RED);
-					colorIndex = 1;
-					break; 
-			case 1:	chemicals.add(ChemicalType.BLUE);
-					colorIndex = 2;
-					break;
-			case 2: chemicals.add(ChemicalType.GREEN);
-					colorIndex = 0;
-					break;	
-		}
-		chemicalPlacement.chemicals = chemicals;
-	}
-
-	public Point getNextCorner(){
-		int i = 0;
-		Point lastSpot = routeList.get(lastSpotIndex);
-		//simPrinter.println("Point: " +lastSpot.x + " " + lastSpot.y + " At: " + lastSpotIndex);
-		if (!lastSpot.equals(target))
-			while (lastSpot.x == routeList.get(lastSpotIndex + i).x || lastSpot.y == routeList.get(lastSpotIndex + i).y){
-				if (routeList.get(lastSpotIndex + i).equals(target)){
-					break;
-				}
-				i++;
-			}
-		return routeList.get(i + lastSpotIndex);
-=======
->>>>>>> upstream/master
 	}
 }
