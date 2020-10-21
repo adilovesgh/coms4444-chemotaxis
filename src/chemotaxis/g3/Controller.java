@@ -21,6 +21,7 @@ public class Controller extends chemotaxis.sim.Controller {
     private List<Point> path = null;
     private Point targetLocation = null;
     private int steppingStone = 0;
+    // private boolean oooo = true;
 
     /**
      * Controller constructor
@@ -84,6 +85,7 @@ public class Controller extends chemotaxis.sim.Controller {
         // TODO: check to see if the agent went in the wrong direction 
 
         // calculate angle between agent and target 
+        // double angle = Math.toDegrees(Math.atan2(target.y - currentY, target.x - currentX));
         double angle = Math.toDegrees(Math.atan2(targetLocation.y - currentY, targetLocation.x - currentX));
 
         if (angle < 0) 
@@ -94,6 +96,8 @@ public class Controller extends chemotaxis.sim.Controller {
         // simPrinter.println("Calculated angle is: " + angle + " degrees.");
         // simPrinter.println("Placing new chemical: " + placements);
 
+        // if (oooo) {
+        //     oooo = false;
         // simPrinter.println("\ncurrent turn: " + currentTurn);
         if (lastPoint.equals(currentLocation) 
             || lastPoint.equals(new Point(-1,-1)) 

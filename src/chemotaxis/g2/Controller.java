@@ -1,22 +1,15 @@
 package chemotaxis.g2;
 
-import java.awt.Point;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.awt.*;
+import java.util.*;
 
-import chemotaxis.sim.ChemicalPlacement;
-import chemotaxis.sim.ChemicalCell;
-import chemotaxis.sim.DirectionType;
-import chemotaxis.sim.SimPrinter;
+import chemotaxis.sim.*;
 
 public class Controller extends chemotaxis.sim.Controller {
     private final DirectionType INITIAL_AGENT_DIR = DirectionType.NORTH;
     private ArrayList<Point> shortestPath;
     private ArrayList<Map.Entry<Point, DirectionType>> turns;
+    private Queue<Map.Entry<Point, MoveType>> movesQueue;
     private DirectionType prevDir;
     private Point prevLocation;
     /**
@@ -34,6 +27,7 @@ public class Controller extends chemotaxis.sim.Controller {
     public Controller(Point start, Point target, Integer size, Integer simTime, Integer budget, Integer seed, SimPrinter simPrinter) {
         super(start, target, size, simTime, budget, seed, simPrinter);
         this.prevDir = INITIAL_AGENT_DIR;
+        this.movesQueue = new LinkedList<>();
     }
 
     /**
@@ -46,20 +40,41 @@ public class Controller extends chemotaxis.sim.Controller {
      * @return                    a cell location and list of chemicals to apply
      *
      */
+    // TODO: update so that it reads from this.movesList instead
     @Override
     public ChemicalPlacement applyChemicals(Integer currentTurn, Integer chemicalsRemaining, Point currentLocation, ChemicalCell[][] grid) {
         simPrinter.println("Turn #" + currentTurn.toString());
         simPrinter.println("Location: " + currentLocation.toString());
 
-        ChemicalPlacement cp = new ChemicalPlacement();
         if (currentTurn == 1) {
             shortestPath = getShortestPath(grid);
             turns = getTurnsList();
+            turnsListToMovesQueue(turns);
+            applyAgentDefaultFilerToMovesList(grid);
             prevLocation = currentLocation;
         }
         updateAgentAttributes(currentLocation, currentTurn);
 
-        if (turns.size() == 0) {
+        ChemicalPlacement cp = new ChemicalPlacement();
+        if (movesQueue.isEmpty()) {
+            cp.location = currentLocation;
+            return cp;
+        }
+
+        Map.Entry<Point, MoveType> moveEntry = movesQueue.peek();
+        Point movePoint = moveEntry.getKey();
+
+        if (movePoint.equals(currentLocation)) {
+            // TODO: handle zig zag MoveType
+            MoveType nextMove = moveEntry.getValue();
+            DirectionType direction = moveToDirectionType(nextMove);
+            cp.location = adjPoint(movePoint, direction);
+            cp.chemicals.add(ChemicalCell.ChemicalType.RED);
+            movesQueue.poll();
+        }
+        return cp;
+
+        /*if (turns.size() == 0) {
             cp.location = currentLocation;
             return cp;
         }
@@ -82,7 +97,135 @@ public class Controller extends chemotaxis.sim.Controller {
             }
         }
         simPrinter.println("Next move: " + cp.toString());
-        return cp;
+        return cp;*/
+    }
+
+    private DirectionType moveToDirectionType(MoveType moveType) {
+        switch (moveType) {
+            case N:
+                return DirectionType.NORTH;
+            case E:
+                return DirectionType.EAST;
+            case S:
+                return DirectionType.SOUTH;
+            default:
+                return DirectionType.WEST;
+        }
+    }
+
+    private MoveType directionToMoveType(DirectionType dir) {
+        switch (dir) {
+            case NORTH:
+                return MoveType.N;
+            case EAST:
+                return MoveType.E;
+            case SOUTH:
+                return MoveType.S;
+            default:
+                return MoveType.W;
+        }
+    }
+
+    // TODO:
+    private void updateMovesQueue(ArrayList<Point> path, ChemicalCell[][] grid) {
+        ArrayList<Map.Entry<Point, DirectionType>> turnsList = getTurnsList();
+        turnsListToMovesQueue(turnsList);
+        applyAgentDefaultFilerToMovesList(grid);
+        applyZigZagFilterToMovesList(grid);
+    }
+
+    private void turnsListToMovesQueue(ArrayList<Map.Entry<Point, DirectionType>> turnsList) {
+        movesQueue = new LinkedList<>();
+        for (Map.Entry<Point, DirectionType> turnEntry: turnsList) {
+            Point point = turnEntry.getKey();
+            MoveType moveType = directionToMoveType(turnEntry.getValue());
+            movesQueue.add(new AbstractMap.SimpleEntry(point, moveType));
+        }
+    }
+
+    // TODO: Joe
+    private void applyAgentDefaultFilerToMovesList(ChemicalCell[][] grid) {
+        MoveType agentPrevMove = MoveType.N;
+        MoveType agentPrevOrthMove = MoveType.E;
+
+        Iterator<Map.Entry<Point, MoveType>> it = movesQueue.iterator();
+        while (it.hasNext()) {
+            Map.Entry<Point, MoveType> moveEntry = it.next();
+            Point point = moveEntry.getKey();
+            MoveType moveToMake = moveEntry.getValue();
+            ArrayList<MoveType> possibleMoves = new ArrayList<>();
+
+            Point westPoint = new Point(point.x, point.y - 1);
+            if (pointIsOpen(westPoint, grid)) {
+                possibleMoves.add(MoveType.W);
+            }
+            Point eastPoint = new Point(point.x, point.y + 1);
+            if (pointIsOpen(eastPoint, grid)) {
+                possibleMoves.add(MoveType.E);
+            }
+            Point southPoint = new Point(point.x + 1, point.y);
+            if (pointIsOpen(southPoint, grid)) {
+                possibleMoves.add(MoveType.S);
+            }
+            Point northPoint = new Point(point.x - 1, point.y);
+            if (pointIsOpen(northPoint, grid)) {
+                possibleMoves.add(MoveType.N);
+            }
+
+            MoveType agentDefaultMove = getAgentsDefaultMove(agentPrevMove, agentPrevOrthMove, possibleMoves);
+            if (agentDefaultMove == moveToMake) {
+                it.remove();
+            }
+
+            // reset agents prev moves
+            if (agentPrevMove == MoveType.N || agentPrevMove == MoveType.S) {
+                if (moveToMake == MoveType.E || moveToMake == MoveType.W) {
+                    agentPrevOrthMove = agentPrevMove;
+                }
+            }
+            else {
+                if (moveToMake == MoveType.N || moveToMake == MoveType.S) {
+                    agentPrevOrthMove = agentPrevMove;
+                }
+            }
+            agentPrevMove = moveToMake;
+        }
+    }
+
+    private boolean pointIsOpen(Point p, ChemicalCell[][] grid) {
+        int rowIndex = p.x - 1;
+        int colIndex = p.y - 1;
+
+        if (rowIndex >= 0 && colIndex >= 0 && rowIndex < grid.length && colIndex < grid.length) {
+            ChemicalCell cell = grid[rowIndex][colIndex];
+            return cell.isOpen();
+        }
+        return false;
+    }
+
+    private MoveType getAgentsDefaultMove(MoveType agentPrevMove,
+                                               MoveType agentPrevOrthMove,
+                                               ArrayList<MoveType> possibleMoves) {
+        if (possibleMoves.contains(agentPrevMove)) {
+            return agentPrevMove;
+        }
+
+        if (possibleMoves.contains(agentPrevOrthMove)) {
+            return agentPrevOrthMove;
+        }
+
+        MoveType oppOfPrevOrthMove = getOppositeMove(agentPrevOrthMove);
+        if (possibleMoves.contains(oppOfPrevOrthMove)) {
+            return oppOfPrevOrthMove;
+        }
+
+        simPrinter.println("Error in getAgentsDefaultMove => agent is repeating points!");
+        return getOppositeMove(agentPrevMove);
+    }
+
+    // TODO:
+    private void applyZigZagFilterToMovesList(ChemicalCell[][] grid) {
+
     }
 
     private void updateAgentAttributes(Point currentLocation, Integer currentTurn) {
@@ -142,7 +285,12 @@ public class Controller extends chemotaxis.sim.Controller {
         return chemicalDirs;
     }
 
-    // TODO: for deliverable
+    // TODO:
+    private ArrayList<Point> getOptimalPath() {
+        //
+        return null;
+    }
+
     // source: https://www.techiedelight.com/lee-algorithm-shortest-path-in-a-maze/
     private ArrayList<Point> getShortestPath(ChemicalCell[][] grid) {
         // after finding shortest path:
@@ -278,6 +426,11 @@ public class Controller extends chemotaxis.sim.Controller {
         return null;
     }
 
+    // TODO:
+    private ArrayList<Point> getLeastTurnsPath(Point start, Point end, ChemicalCell[][] grid) {
+        return null;
+    }
+
     private boolean isValid(ChemicalCell grid[][], boolean visited[][], int i, int j) {
         return (i >= 0) && (i < size) && (j >= 0) && (j < size) && grid[i][j].isOpen() && !visited[i][j];
     }
@@ -368,6 +521,22 @@ public class Controller extends chemotaxis.sim.Controller {
         return adjacent;
     }
 
+    private MoveType getOppositeMove(MoveType moveType) {
+        switch (moveType) {
+            case N:
+                return MoveType.S;
+            case S:
+                return MoveType.N;
+            case W:
+                return MoveType.E;
+            case E:
+                return MoveType.W;
+            default:
+                simPrinter.println("ERROR in getOppositeMove: returning default MoveType.S");
+                return MoveType.S;
+        }
+    }
+
     private int getPathCost() {
         return turns.size();
     }
@@ -385,7 +554,6 @@ public class Controller extends chemotaxis.sim.Controller {
             this.y = y;
             this.dist = dist;
         }
-
     }
 
     private void printColorMap(Map<DirectionType, ChemicalCell.ChemicalType> chemDirs) {
@@ -393,10 +561,4 @@ public class Controller extends chemotaxis.sim.Controller {
             simPrinter.println(chemDir.getKey().toString() + ": " + chemDir.getValue().toString());
         }
     }
-
-    /*
-    * TODOS:
-    * Longterm diagnol
-    * what if get shortest path fails
-    * */
 }

@@ -1,26 +1,25 @@
 package chemotaxis.g5;
 
 import java.util.Map;
+import java.util.*;
 
 import chemotaxis.sim.DirectionType;
 import chemotaxis.sim.ChemicalCell;
+import chemotaxis.sim.ChemicalCell.ChemicalType;
 import chemotaxis.sim.Move;
 import chemotaxis.sim.SimPrinter;
-import chemotaxis.sim.ChemicalCell.ChemicalType;
 
 public class Agent extends chemotaxis.sim.Agent {
-	
 
-   /**
-    * Agent constructor
-    *
-    * @param simPrinter  simulation printer
-    *
-    */
-   public Agent(SimPrinter simPrinter) {
-      super(simPrinter);
-   }
-
+    /**
+     * Agent constructor
+     *
+     * @param simPrinter  simulation printer
+     *
+     */
+	public Agent(SimPrinter simPrinter) {
+		super(simPrinter);
+	}
    /**
     * Move agent
     *
