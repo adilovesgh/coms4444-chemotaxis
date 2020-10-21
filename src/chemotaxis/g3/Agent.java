@@ -66,12 +66,30 @@ public class Agent extends chemotaxis.sim.Agent {
         // '0', '+', '0', '*', '0', '+', '0', '.', 'C'
         //  0    1    2    3    4    5    6    7    8
         
-
         // based on the prevState, check the surroundings and find an opening for the next move 
         if (prevState.equals("pause")) {
             simPrinter.println("Agent is paused");
             move.directionType = DirectionType.CURRENT;
             nextState = "pause".toCharArray();
+        }
+        if (prevState.equals("0+0*0+0.R") && instructionCheck == null) {
+            simPrinter.println("Agent left with no instructionn, wandering");
+            if (downOpen(neighborMap)) {
+                nextState = "0+0.0-1*R".toCharArray();
+                move.directionType = DirectionType.WEST;
+            }
+            else if (rightOpen(neighborMap)) {
+                nextState = "0+1*0+0.R".toCharArray();
+                move.directionType = DirectionType.SOUTH;
+            }
+            else if (upOpen(neighborMap)) {
+                nextState = "0+0.0+1*R".toCharArray();
+                move.directionType = DirectionType.EAST;
+            }
+            else if (leftOpen(neighborMap)) {
+                nextState = "0-1*0+0.R".toCharArray();
+                move.directionType = DirectionType.NORTH;
+            }
         }
         // else if (blocked(prevState, neighborMap)) {
         //     nextState = moveWithBlock(prevState, neighborMap);
@@ -94,6 +112,26 @@ public class Agent extends chemotaxis.sim.Agent {
         }
         else if (mobilityRight(prevState, neighborMap)) {
             simPrinter.println("Agent can + should move south/right");
+            nextState = moveInX(nextState, prevState);
+            move.directionType = DirectionType.SOUTH;
+        }
+        else if (mobilityUpCycle(prevState, neighborMap)) {
+            simPrinter.println("Agent may be blocked, repeating cycle up");
+            nextState =  moveInY(nextState, prevState);
+            move.directionType = DirectionType.EAST;
+        }
+        else if (mobilityDownCycle(prevState, neighborMap)) {
+            simPrinter.println("Agent may be blocked, repeating cycle down");
+            nextState =  moveInY(nextState, prevState);
+            move.directionType = DirectionType.WEST;
+        }
+        else if (mobilityLeftCycle(prevState, neighborMap)) {
+            simPrinter.println("Agent may be blocked, repeating cycle left");
+            nextState = moveInX(nextState, prevState);
+            move.directionType = DirectionType.NORTH;
+        }
+        else if (mobilityRightCycle(prevState, neighborMap)) {
+            simPrinter.println("Agent may be blocked, repeating cycle right");
             nextState = moveInX(nextState, prevState);
             move.directionType = DirectionType.SOUTH;
         }
@@ -159,12 +197,15 @@ public class Agent extends chemotaxis.sim.Agent {
         // and moving up is possible according to state
         // and either – not resetting AND you can move up in this cycle 
         //         or – are resetting AND you have not maxed out moves in that axis for this cycle 
+        return (state.charAt(5) == '+'
+                && ((state.charAt(8) == 'C' && state.charAt(4) <= state.charAt(6) - 1) 
+                    || (state.charAt(8) == 'R' && state.charAt(4) == state.charAt(6) - 1))
+                && upOpen(surroundings)
+        );
+    }
+
+    private Boolean mobilityUpCycle(String state, Map<DirectionType, ChemicalCell> surroundings) {
         return (state.charAt(5) == '+' && state.charAt(6) >= '1' && upOpen(surroundings));
-        // return (state.charAt(5) == '+'
-        //         && ((state.charAt(8) == 'C' && state.charAt(4) <= state.charAt(6) - 1) 
-        //             || (state.charAt(8) == 'R' && state.charAt(4) == state.charAt(6) - 1))
-        //         && upOpen(surroundings)
-        // );
     }
 
     private Boolean upOpen(Map<DirectionType, ChemicalCell> surroundings) {
@@ -172,12 +213,15 @@ public class Agent extends chemotaxis.sim.Agent {
     }
 
     private Boolean mobilityDown(String state, Map<DirectionType, ChemicalCell> surroundings) {
+        return (state.charAt(5) == '-'
+                && ((state.charAt(8) == 'C' && state.charAt(4) <= state.charAt(6) - 1) 
+                    || (state.charAt(8) == 'R' && state.charAt(4) == state.charAt(6) - 1))
+                && downOpen(surroundings)
+        );
+    }
+
+    private Boolean mobilityDownCycle(String state, Map<DirectionType, ChemicalCell> surroundings) {
         return (state.charAt(5) == '-' && state.charAt(6) >= '1' && downOpen(surroundings));
-        // return (state.charAt(5) == '-'
-        //         && ((state.charAt(8) == 'C' && state.charAt(4) <= state.charAt(6) - 1) 
-        //             || (state.charAt(8) == 'R' && state.charAt(4) == state.charAt(6) - 1))
-        //         && downOpen(surroundings)
-        // );
     }
 
     private Boolean downOpen(Map<DirectionType, ChemicalCell> surroundings) {
@@ -185,12 +229,15 @@ public class Agent extends chemotaxis.sim.Agent {
     }
 
     private Boolean mobilityLeft(String state, Map<DirectionType, ChemicalCell> surroundings) {
+        return (state.charAt(1) == '-'
+                && ((state.charAt(8) == 'C' && state.charAt(0) <= state.charAt(2) - 1) 
+                    || (state.charAt(8) == 'R' && state.charAt(0) == state.charAt(2) - 1))
+                && rightOpen(surroundings)
+        );
+    }
+
+    private Boolean mobilityLeftCycle(String state, Map<DirectionType, ChemicalCell> surroundings) {
         return (state.charAt(1) == '-' && state.charAt(2) >= '1' && leftOpen(surroundings));
-        // return (state.charAt(1) == '-'
-        //         && ((state.charAt(8) == 'C' && state.charAt(0) <= state.charAt(2) - 1) 
-        //             || (state.charAt(8) == 'R' && state.charAt(0) == state.charAt(2) - 1))
-        //         && rightOpen(surroundings)
-        // );
     }
 
     private Boolean leftOpen(Map<DirectionType, ChemicalCell> surroundings) {
@@ -198,12 +245,15 @@ public class Agent extends chemotaxis.sim.Agent {
     }
 
     private Boolean mobilityRight(String state, Map<DirectionType, ChemicalCell> surroundings) {
+        return (state.charAt(1) == '+'
+                && ((state.charAt(8) == 'C' && state.charAt(0) <= state.charAt(2) - 1) 
+                    || (state.charAt(8) == 'R' && state.charAt(0) == state.charAt(2) - 1))
+                && rightOpen(surroundings)
+        );
+    }
+
+    private Boolean mobilityRightCycle(String state, Map<DirectionType, ChemicalCell> surroundings) {
         return (state.charAt(1) == '+' && state.charAt(2) >= '1' && rightOpen(surroundings));
-        // return (state.charAt(1) == '+'
-        //         && ((state.charAt(8) == 'C' && state.charAt(0) <= state.charAt(2) - 1) 
-        //             || (state.charAt(8) == 'R' && state.charAt(0) == state.charAt(2) - 1))
-        //         && rightOpen(surroundings)
-        // );
     }
 
     private Boolean rightOpen(Map<DirectionType, ChemicalCell> surroundings) {
@@ -558,6 +608,7 @@ public class Agent extends chemotaxis.sim.Agent {
                 nextState[8] = 'R';
         } 
         if (!trans.validByte(nextState)) {
+            simPrinter.println("Invalid state was created: " + nextState);
             nextState = new char[] { '0', prevState.charAt(1), prevState.charAt(2), '*',
                                      '0', prevState.charAt(5), prevState.charAt(6), '.', 'C'};
             if (nextState[2] == '0' || nextState[6] == '0')
@@ -581,6 +632,7 @@ public class Agent extends chemotaxis.sim.Agent {
                 nextState[8] = 'R';
         }
         if (!trans.validByte(nextState)) {
+            simPrinter.println("Invalid state was created: " + nextState);
             nextState = new char[] { '0', prevState.charAt(1), prevState.charAt(2), '.',
                                      '0', prevState.charAt(5), prevState.charAt(6), '*', 'C'};
             if (nextState[2] == '0' || nextState[6] == '0')

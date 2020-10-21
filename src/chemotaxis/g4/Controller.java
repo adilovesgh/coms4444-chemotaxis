@@ -66,174 +66,17 @@ public class Controller extends chemotaxis.sim.Controller {
     */
    @Override
 	public ChemicalPlacement applyChemicals(Integer currentTurn, Integer chemicalsRemaining, Point currentLocation, ChemicalCell[][] grid) {
-
-		if (currentTurn == 1) {
-			this.bestPath = new Node[this.size][this.size];
-
-			for (int i = 0; i < this.size; i++) {
-				for (int j = 0; j < this.size; j++) {
-					bestPath[i][j] = new Node();
-				}
-			}
-
-			bestPath[this.startX][this.startY] = new Node(this.startX, this.startY);
-
-			frontier.add(bestPath[this.startX][this.startY]);
-			
-			boolean pathFound = false;
-			while (!frontier.isEmpty() && !pathFound) {
-				// System.out.println(counter++ + ",  " + frontier.size());
-				Node currentNode = frontier.remove();
-				
-				// Search path north
-				if (currentNode.getX() > 0) {
-					if (grid[currentNode.getX() - 1][currentNode.getY()].isOpen()) {
-						Node newPath = new Node(currentNode, currentNode.getX() - 1, currentNode.getY());
-						if (newPath.getTurns() <= chemicalsRemaining) {
-							int newTurns = newPath.getTurns();
-							int oldTurns = bestPath[newPath.getX()][newPath.getY()].getTurns();
-							int newLength = newPath.getLength();
-							int oldLength = bestPath[newPath.getX()][newPath.getY()].getLength();
-
-
-							if ((newTurns < oldTurns && newLength <= oldLength) || ((newTurns <= oldTurns && newLength < oldLength))) {
-								frontier.add(newPath);
-								bestPath[newPath.getX()][newPath.getY()] = newPath;
-
-								if (this.targetX == newPath.getX() && this.targetY == newPath.getY()) {
-									pathFound = true;
-								}
-							}
-							else if (newTurns > oldTurns && newLength < oldLength) {
-								frontier.add(newPath);
-								bestPath[newPath.getX()][newPath.getY()] = newPath;
-							}
-							else if (newTurns < oldTurns && newLength > oldLength) {
-								frontier.add(newPath);
-							}
-						}
-					}
-				}
-
-				// Search path south
-				if (currentNode.getX() < this.size - 1) {
-					if (grid[currentNode.getX() + 1][currentNode.getY()].isOpen()) {
-						Node newPath = new Node(currentNode, currentNode.getX() + 1, currentNode.getY());
-						if (newPath.getTurns() <= chemicalsRemaining) {
-							int newTurns = newPath.getTurns();
-							int oldTurns = bestPath[newPath.getX()][newPath.getY()].getTurns();
-							int newLength = newPath.getLength();
-							int oldLength = bestPath[newPath.getX()][newPath.getY()].getLength();
-
-
-							if ((newTurns < oldTurns && newLength <= oldLength) || ((newTurns <= oldTurns && newLength < oldLength))) {
-								frontier.add(newPath);
-								bestPath[newPath.getX()][newPath.getY()] = newPath;
-
-								if (this.targetX == newPath.getX() && this.targetY == newPath.getY()) {
-									pathFound = true;
-								}
-							}
-							else if (newTurns > oldTurns && newLength < oldLength) {
-								frontier.add(newPath);
-								bestPath[newPath.getX()][newPath.getY()] = newPath;
-							}
-							else if (newTurns < oldTurns && newLength > oldLength) {
-								frontier.add(newPath);
-							}
-						}
-					}
-				}
-
-				// Search path east
-				if (currentNode.getY() < this.size - 1) {
-					if (grid[currentNode.getX()][currentNode.getY() + 1].isOpen()) {
-						Node newPath = new Node(currentNode, currentNode.getX(), currentNode.getY() + 1);
-						if (newPath.getTurns() <= chemicalsRemaining) {
-							int newTurns = newPath.getTurns();
-							int oldTurns = bestPath[newPath.getX()][newPath.getY()].getTurns();
-							int newLength = newPath.getLength();
-							int oldLength = bestPath[newPath.getX()][newPath.getY()].getLength();
-
-
-							if ((newTurns < oldTurns && newLength <= oldLength) || ((newTurns <= oldTurns && newLength < oldLength))) {
-								frontier.add(newPath);
-								bestPath[newPath.getX()][newPath.getY()] = newPath;
-
-								if (this.targetX == newPath.getX() && this.targetY == newPath.getY()) {
-									pathFound = true;
-								}
-							}
-							else if (newTurns > oldTurns && newLength < oldLength) {
-								frontier.add(newPath);
-								bestPath[newPath.getX()][newPath.getY()] = newPath;
-							}
-							else if (newTurns < oldTurns && newLength > oldLength) {
-								frontier.add(newPath);
-							}
-						}
-					}
-				}
-
-				// Search path west
-				if (currentNode.getY() > 0) {
-					if (grid[currentNode.getX()][currentNode.getY() - 1].isOpen()) {
-						Node newPath = new Node(currentNode, currentNode.getX(), currentNode.getY() - 1);
-						if (newPath.getTurns() <= chemicalsRemaining) {
-							int newTurns = newPath.getTurns();
-							int oldTurns = bestPath[newPath.getX()][newPath.getY()].getTurns();
-							int newLength = newPath.getLength();
-							int oldLength = bestPath[newPath.getX()][newPath.getY()].getLength();
-
-
-							if ((newTurns < oldTurns && newLength <= oldLength) || ((newTurns <= oldTurns && newLength < oldLength))) {
-								frontier.add(newPath);
-								bestPath[newPath.getX()][newPath.getY()] = newPath;
-
-								if (this.targetX == newPath.getX() && this.targetY == newPath.getY()) {
-									pathFound = true;
-								}
-							}
-							else if (newTurns > oldTurns && newLength < oldLength) {
-								frontier.add(newPath);
-								bestPath[newPath.getX()][newPath.getY()] = newPath;
-							}
-							else if (newTurns < oldTurns && newLength > oldLength) {
-								frontier.add(newPath);
-							}
-						}
-					}
-				}
-			}
-
-			// Reconstruct path
-			if (bestPath[this.targetX][this.targetY].getParent() != null) {
-				Node currentNode = bestPath[this.targetX][this.targetY];
-
-				while (currentNode.getParent() != null) {
-					Node parent = currentNode.getParent();
-
-					if (parent.getDirection() != currentNode.getDirection()) {
-						directionChanges.add(new DirectionChange(parent.getX(), parent.getY(), currentNode.getDirection()));
-					}
-
-					currentNode = parent;
-				}
-
-				// for (DirectionChange d : directionChanges) {
-				// 	System.out.println(d.getX() + ", " + d.getY() + ", " + d.getDirection());
-				// }
-
-			}
-
-
+		//find path in 1st round OR when no valid path was found previously
+		if (currentTurn == 1 || bestPath[this.targetX][this.targetY].getParent() == null) {
+			//System.out.println("calculating path...");
+			findPath(currentTurn, chemicalsRemaining, currentLocation, grid);
 		}
 
 		if (bestPath[this.targetX][this.targetY].getParent() != null) {
 
 			ChemicalPlacement chemicalPlacement = new ChemicalPlacement();
 			List<ChemicalType> chemicals = new ArrayList<>();
-			chemicalPlacement.location = new Point(1, 1);
+			//chemicalPlacement.location = new Point(1, 1);
 
 			if (directionChanges.size() > 0 && directionChanges.get(directionChanges.size() - 1).atPostion(currentLocation)) {
 				chemicals.add(ChemicalType.BLUE);
@@ -255,15 +98,20 @@ public class Controller extends chemotaxis.sim.Controller {
 			}
 			chemicalPlacement.chemicals = chemicals;
 			
-			//printAppliedChemicals(chemicalPlacement, currentTurn);
+			if (chemicalPlacement.location != null) {
+				printAppliedChemicals(chemicalPlacement, currentTurn);
+			}
 			return chemicalPlacement;
 		}
+
+		//if path has more turning points than chemicals, do nothing
 	
 		ChemicalPlacement chemicalPlacement = new ChemicalPlacement();
 		List<ChemicalType> chemicals = new ArrayList<>();
-		chemicals.add(ChemicalType.BLUE);
-		chemicalPlacement.location = new Point(5, 5);
+		//chemicals.add(ChemicalType.BLUE);
+		//chemicalPlacement.location = new Point(5, 5);
 		chemicalPlacement.chemicals = chemicals;
+		//System.out.println("no valid");
 		return chemicalPlacement;
    }
 
@@ -271,7 +119,171 @@ public class Controller extends chemotaxis.sim.Controller {
 	   System.out.println("Applied at position " + placement.location + "at turn " + turn + "\n=================================================================\n");
    }
 
+
+   private void findPath(Integer currentTurn, Integer chemicalsRemaining, Point currentLocation, ChemicalCell[][] grid){
+		this.bestPath = new Node[this.size][this.size];
+
+		for (int i = 0; i < this.size; i++) {
+			for (int j = 0; j < this.size; j++) {
+				bestPath[i][j] = new Node();
+			}
+		}
+
+		int startX = (int)currentLocation.getX() - 1;
+		int startY = (int)currentLocation.getY() - 1;
+		bestPath[startX][startY] = new Node(startX, startY);
+		frontier.add(new Node(startX, startY));
+		
+		boolean pathFound = false;
+		while (!frontier.isEmpty() && !pathFound) {
+			// System.out.println(counter++ + ",  " + frontier.size());
+			Node currentNode = frontier.remove();
+			
+			// Search path north
+			if (currentNode.getX() > 0) {
+				if (grid[currentNode.getX() - 1][currentNode.getY()].isOpen()) {
+					Node newPath = new Node(currentNode, currentNode.getX() - 1, currentNode.getY());
+					if (newPath.getTurns() <= chemicalsRemaining) {
+						int newTurns = newPath.getTurns();
+						int oldTurns = bestPath[newPath.getX()][newPath.getY()].getTurns();
+						int newLength = newPath.getLength();
+						int oldLength = bestPath[newPath.getX()][newPath.getY()].getLength();
+
+
+						if ((newTurns < oldTurns && newLength <= oldLength) || ((newTurns <= oldTurns && newLength < oldLength))) {
+							frontier.add(newPath);
+							bestPath[newPath.getX()][newPath.getY()] = newPath;
+
+							if (this.targetX == newPath.getX() && this.targetY == newPath.getY()) {
+								pathFound = true;
+							}
+						}
+						else if (newTurns > oldTurns && newLength < oldLength) {
+							frontier.add(newPath);
+							bestPath[newPath.getX()][newPath.getY()] = newPath;
+						}
+						else if (newTurns < oldTurns && newLength > oldLength) {
+							frontier.add(newPath);
+						}
+					}
+				}
+			}
+
+			// Search path south
+			if (currentNode.getX() < this.size - 1) {
+				if (grid[currentNode.getX() + 1][currentNode.getY()].isOpen()) {
+					Node newPath = new Node(currentNode, currentNode.getX() + 1, currentNode.getY());
+					if (newPath.getTurns() <= chemicalsRemaining) {
+						int newTurns = newPath.getTurns();
+						int oldTurns = bestPath[newPath.getX()][newPath.getY()].getTurns();
+						int newLength = newPath.getLength();
+						int oldLength = bestPath[newPath.getX()][newPath.getY()].getLength();
+
+
+						if ((newTurns < oldTurns && newLength <= oldLength) || ((newTurns <= oldTurns && newLength < oldLength))) {
+							frontier.add(newPath);
+							bestPath[newPath.getX()][newPath.getY()] = newPath;
+
+							if (this.targetX == newPath.getX() && this.targetY == newPath.getY()) {
+								pathFound = true;
+							}
+						}
+						else if (newTurns > oldTurns && newLength < oldLength) {
+							frontier.add(newPath);
+							bestPath[newPath.getX()][newPath.getY()] = newPath;
+						}
+						else if (newTurns < oldTurns && newLength > oldLength) {
+							frontier.add(newPath);
+						}
+					}
+				}
+			}
+
+			// Search path east
+			if (currentNode.getY() < this.size - 1) {
+				if (grid[currentNode.getX()][currentNode.getY() + 1].isOpen()) {
+					Node newPath = new Node(currentNode, currentNode.getX(), currentNode.getY() + 1);
+					if (newPath.getTurns() <= chemicalsRemaining) {
+						int newTurns = newPath.getTurns();
+						int oldTurns = bestPath[newPath.getX()][newPath.getY()].getTurns();
+						int newLength = newPath.getLength();
+						int oldLength = bestPath[newPath.getX()][newPath.getY()].getLength();
+
+
+						if ((newTurns < oldTurns && newLength <= oldLength) || ((newTurns <= oldTurns && newLength < oldLength))) {
+							frontier.add(newPath);
+							bestPath[newPath.getX()][newPath.getY()] = newPath;
+
+							if (this.targetX == newPath.getX() && this.targetY == newPath.getY()) {
+								pathFound = true;
+							}
+						}
+						else if (newTurns > oldTurns && newLength < oldLength) {
+							frontier.add(newPath);
+							bestPath[newPath.getX()][newPath.getY()] = newPath;
+						}
+						else if (newTurns < oldTurns && newLength > oldLength) {
+							frontier.add(newPath);
+						}
+					}
+				}
+			}
+
+			// Search path west
+			if (currentNode.getY() > 0) {
+				if (grid[currentNode.getX()][currentNode.getY() - 1].isOpen()) {
+					Node newPath = new Node(currentNode, currentNode.getX(), currentNode.getY() - 1);
+					if (newPath.getTurns() <= chemicalsRemaining) {
+						int newTurns = newPath.getTurns();
+						int oldTurns = bestPath[newPath.getX()][newPath.getY()].getTurns();
+						int newLength = newPath.getLength();
+						int oldLength = bestPath[newPath.getX()][newPath.getY()].getLength();
+
+
+						if ((newTurns < oldTurns && newLength <= oldLength) || ((newTurns <= oldTurns && newLength < oldLength))) {
+							frontier.add(newPath);
+							bestPath[newPath.getX()][newPath.getY()] = newPath;
+
+							if (this.targetX == newPath.getX() && this.targetY == newPath.getY()) {
+								pathFound = true;
+							}
+						}
+						else if (newTurns > oldTurns && newLength < oldLength) {
+							frontier.add(newPath);
+							bestPath[newPath.getX()][newPath.getY()] = newPath;
+						}
+						else if (newTurns < oldTurns && newLength > oldLength) {
+							frontier.add(newPath);
+						}
+					}
+				}
+			}
+		}
+
+		// Reconstruct path
+		if (bestPath[this.targetX][this.targetY].getParent() != null) {
+			Node currentNode = bestPath[this.targetX][this.targetY];
+
+			while (currentNode.getParent() != null) {
+				Node parent = currentNode.getParent();
+
+				if (parent.getDirection() != currentNode.getDirection()) {
+					directionChanges.add(new DirectionChange(parent.getX(), parent.getY(), currentNode.getDirection()));
+				}
+
+				currentNode = parent;
+			}
+
+			//for (DirectionChange d : directionChanges) {
+			//System.out.println(d.getX() + ", " + d.getY() + ", " + d.getDirection());
+			//}
+
+		}
+
+   }
+
 }
+
 
 class Node implements Comparable<Node> {
 	private Node parent;
@@ -377,6 +389,8 @@ class DirectionChange {
 	}
 	
 	public boolean atPostion(Point p) {
+		//System.out.println(this.x);
+		//System.out.println(this.y);
 		return p.getX() == this.x + 1 && p.getY() == this.y + 1;
 	}
 
@@ -392,6 +406,7 @@ class DirectionChange {
 		return this.direction;
 	}
 }
+
 
 enum Direction {
     NORTH,

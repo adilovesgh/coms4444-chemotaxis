@@ -30,6 +30,7 @@ public final class Language {
         public static String getState(String color, Integer b) {
             // retrieve box number and coordinates for this direction
             int box = colorToBoxNum.get(color);
+            System.out.println("Box: " + box);
             String coords = boxNumToCoords[box];
             // simPrinter.println("Coords are: " + coords);
 
@@ -147,9 +148,9 @@ public final class Language {
         private final static String[] boxNumToCoords = new String[] {
                             "-1+3",         "+1+3", 
                             "-1+2",         "+1+2", 
-            "-3+1", "-2+1", "-1+1", "+0+1", "+1+1","+2+1", "+3+1",
+            "-3+1", "-2+1", "-1+1", "+0+1", "+1+1", "+2+1", "+3+1",
                             "-1+0",         "+1+0",
-            "-3-1", "-2-1", "-1-1", "+0-1", "+1-1", "2-1", "+3-1",
+            "-3-1", "-2-1", "-1-1", "+0-1", "+1-1", "+2-1", "+3-1",
                             "-1-2",         "+1-2",
                             "-1-3",         "+1-3"
         };

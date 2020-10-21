@@ -94,15 +94,56 @@ public class PathFinder {
         List<Point> ret = new ArrayList<Point>();
 
         // ret.add(path.get(0));
-        for (int i = 1; i < path.size() - 1; i++) {
-            a = path.get(i - 1);
+        // for (int i = 1; i < path.size() - 1; i++) {
+        //     a = path.get(i - 1);
+        //     b = path.get(i);
+        //     c = path.get(i + 1);
+        //     if (sameAngle(a,b,c)) {
+        //         continue;
+        //     }
+        //     // else if (sameDirection(a,b,c)) {
+        //     //     continue;
+        //     // }
+        //     ret.add(b);
+        // }
+        // ret.add(path.get(path.size()-1));
+
+        for (int i = 2; i < path.size() - 2; i++) {
+            a = path.get(i - 2);
             b = path.get(i);
-            c = path.get(i + 1);
-            if (!sameAngle(a,b,c)) {
-                ret.add(b);
+            c = path.get(i + 2);
+            if (sameDirection(a,b,c)) {
+                continue;
             }
+            ret.add(b);
         }
         ret.add(path.get(path.size()-1));
+
+        // List<Point> ret2 = new ArrayList<Point>();
+        // for (int i = 2; i < ret.size() - 2; i++) {
+        //     a = ret.get(i - 2);
+        //     b = ret.get(i);
+        //     c = ret.get(i + 2);
+        //     if (sameDirection(a,b,c)) {
+        //         continue;
+        //     }
+        //     ret2.add(b);
+        // }
+        // ret2.add(path.get(path.size()-1));
+
+        // List<Point> ret2 = new ArrayList<Point>();
+        // for (int i = 2; i < ret.size() - 2; i++) {
+        //     a = ret.get(i - 2);
+        //     b = ret.get(i);
+        //     c = ret.get(i + 2);
+        //     if (sameDirection(a,b,c)) {
+        //         continue;
+        //     }
+        //     ret2.add(b);
+        // }
+        // ret2.add(path.get(path.size()-1));
+        // System.out.println(ret2.size());
+
         return ret;
         
     }
@@ -116,5 +157,26 @@ public class PathFinder {
         double angle2 = Math.toDegrees(Math.atan2(c.y - b.y, c.y - b.y));
         return angle1 == angle2;
     }
+
+    private static boolean sameDirection(Point a, Point b, Point c) {
+        Point ab = new Point(b.x - a.x, b.y - a.y);
+        Point bc = new Point(c.x - b.x, c.y - b.y);
+        if ((ab.x == 0 && bc.x == 0 && ab.y > 0 && bc.y > 0)
+            || (ab.x == 0 && bc.x == 0 && ab.y < 0 && bc.y < 0)
+            || (ab.x > 0 && bc.x > 0 && ab.y == 0 && bc.y == 0)
+            || (ab.x < 0 && bc.x < 0 && ab.y == 0 && bc.y == 0)
+            || (ab.x > 0 && bc.x > 0 && ab.y > 0 && bc.y > 0)
+            || (ab.x < 0 && bc.x < 0 && ab.y > 0 && bc.y > 0)
+            || (ab.x > 0 && bc.x > 0 && ab.y < 0 && bc.y < 0)
+            || (ab.x < 0 && bc.x < 0 && ab.y < 0 && bc.y < 0))
+            return true;
+        return false;
+    }
+
+    // public static Point blockedBetween(Point a, Point b) {
+    //     return new Point();
+    // }
+
+    
 
 }

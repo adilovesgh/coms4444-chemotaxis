@@ -12,6 +12,9 @@ public class Controller extends chemotaxis.sim.Controller {
 
     private Integer currApplication;    // keep track of where chemicals have been applied on path
     private Integer totalChemicals;     // total number of chemicals
+    private List<Point> myPath;
+    private List<Point> myTurnPath;
+    private Map<Point, List<Point>> myAllKPaths;
 
     /**
      * Controller constructor
@@ -29,6 +32,9 @@ public class Controller extends chemotaxis.sim.Controller {
         super(start, target, size, simTime, budget, seed, simPrinter);
         this.currApplication = 1;
         this.totalChemicals = 0;
+        this.myTurnPath = new ArrayList<>();
+        this.myPath = new ArrayList<>();
+        this.myAllKPaths = new HashMap<>();
     }
 
     /**
@@ -44,88 +50,322 @@ public class Controller extends chemotaxis.sim.Controller {
     @Override
     public ChemicalPlacement applyChemicals(Integer currentTurn, Integer chemicalsRemaining, Point currentLocation, ChemicalCell[][] grid) {
         if (currentTurn == 1) {
-            this.totalChemicals = chemicalsRemaining;             // Get total chemicals
+            this.totalChemicals = chemicalsRemaining;
+            this.myAllKPaths = getAllPathsFromTarget(grid, this.totalChemicals);
+            this.myPath = getOptimalPath(this.start, grid, this.myAllKPaths, totalChemicals);
+            this.myTurnPath = getTurns(this.myPath);
+            //System.out.println("Size: " + this.allKPaths.keySet().size() + "\n" + this.allKPaths.keySet());
+            //System.out.println(this.allKPaths.keySet().contains(start));
+            //System.out.println("TURNS: \n"+myTurnPath + "\n \n");
         }
-        List<Point> path = getShortestPath(currentLocation, grid);
-
-        // System.out.println(currentLocation);
-        // System.out.println(path);
-        // System.out.println("~~~~~~~~~~");
-
-        // System.out.println(this.path);
+//        if(!isPathsEquivalent(this.myPath, getOptimalPath(currentLocation, grid, this.myAllKPaths, chemicalsRemaining))) {
+//            System.out.println("Paths unequal\n");
+//            System.out.println(this.myPath + "\n");
+//            System.out.println(getOptimalPath(currentLocation, grid, this.myAllKPaths, chemicalsRemaining) + "\n");
+//            this.myAllKPaths = getAllPathsFromTarget(grid, chemicalsRemaining);
+//            this.myPath = getOptimalPath(currentLocation, grid, this.myAllKPaths, chemicalsRemaining);
+//            this.myTurnPath = getTurns(this.myPath);
+//        }
 
         ChemicalPlacement chemicalPlacement = new ChemicalPlacement();
 
         List<ChemicalType> chemicals = new ArrayList<>();
-        chemicals.add(ChemicalType.BLUE);                           // Using blue chemical
+        chemicals.add(ChemicalType.BLUE);
 
-        /**
-        if ((this.currApplication) < this.path.size()) {        // If not done dropping chemicals along whole path
-            chemicalPlacement.chemicals = chemicals;
-            if (chemicalsRemaining >= this.totalChemicals/2)    // If over half of chemicals left, use more liberally
-                chemicalPlacement.location = path.get(this.currApplication++);
-            else if (chemicalsRemaining < this.totalChemicals/2 && currentTurn % 2 == 1) {
-                chemicalPlacement.location = path.get(this.currApplication);
-                this.currApplication += 2;
+        if (!myTurnPath.isEmpty() && chemicalsRemaining != 0) {
+            if(closeToTurn(currentLocation, myTurnPath)){
+                chemicalPlacement.chemicals = chemicals;
+                chemicalPlacement.location = myTurnPath.get(0);
+                myTurnPath.remove(0);
             }
-        }
-        else                                                    // If done dropping along whole path, drop at target
-            chemicalPlacement.location = this.target;
-        **/
-
-        if ((this.currApplication) < path.size()) {        // If not done dropping chemicals along whole path
-            chemicalPlacement.chemicals = chemicals;
-            chemicalPlacement.location = path.get(1);
         }
 
         return chemicalPlacement;
     }
 
-    // BFS implementation
-    public List<Point> getShortestPath(Point s, ChemicalCell[][] grid) {
-        List<List<Point>> queue = new ArrayList<>();
-        Set<Point> visited = new HashSet<Point>();
-        List<Point> start = new ArrayList<>();
-        start.add(s);
-        queue.add(start);
-
-        for (int i = 0; i < queue.size(); i++) {
-            List<Point> node = queue.get(i);
-            node.add(node.get(0));                      // First element of "node": the current cell
-            if (target.equals(node.get(0)))             // If target cell is reached, return path
-                return node.subList(1,node.size());     // Second -> last elements of "node": path to current cell
-            if (!visited.contains(node.get(0))){
-                List<Point> neighbors = getNeighbors(node.get(0), grid);
-                for (Point neighbor : neighbors) {
-                    if (!visited.contains(neighbor)) {
-                        List<Point> new_node = new ArrayList(node.subList(1,node.size()));
-                        new_node.add(0, neighbor);
-                        queue.add(new_node);
-                    }
-                }
-                visited.add(node.get(0));
-            }
+    private Boolean closeToTurn(Point cur, List<Point> turnPath) {
+        for(Point point : turnPath) {
+            if(point.x == cur.x && Math.abs(point.y-cur.y) == 1) return true;
+            else if(point.y == cur.y && Math.abs(point.x-cur.x) == 1) return true;
         }
-        return new ArrayList<Point>();
+        return false;
     }
 
-    // Get available neighbors of a cell
-    public List<Point> getNeighbors(Point node, ChemicalCell[][] grid) {
-        List<Point> neighbors = new ArrayList<>();
-        int x = (int)node.getX()-1;
-        int y = (int)node.getY()-1;
-        if (x > 0 && grid[x-1][y].isOpen())
-            neighbors.add(new Point(x, y+1));
-        if (y > 0 && grid[x][y-1].isOpen())
-            neighbors.add(new Point(x+1, y));
-        if (x < grid.length-1 && grid[x+1][y].isOpen())
-            neighbors.add(new Point(x+2, y+1));
-        if (y < grid.length-1 && grid[x][y+1].isOpen())
-            neighbors.add(new Point(x+1, y+2));
+    private Boolean isPathsEquivalent(List<Point> p1, List<Point> p2) {
+        if(!p1.isEmpty() && !p2.isEmpty()) {
+            if (p1.size() != p2.size()) {
+                if (p1.size() > p2.size()) {
+                    if (!p1.contains(p2.get(0))) return false;
+                    else {
+                        for (int i = 0; i < p1.indexOf(p2.get(0)); i++) {
+                            p1.remove(i);
+                        }
+                    }
+                } else if (p2.size() > p1.size()) {
+                    if (!p2.contains(p1.get(0))) return false;
+                    else {
+                        for (int i = 0; i < p2.indexOf(p1.get(0)); i++) {
+                            p2.remove(i);
+                        }
+                    }
+                }
+            }
+            if (p1.size() == p2.size()) {
+                for (int i = 0; i < p1.size(); i++) {
+                    if (p1.get(i).x != p2.get(i).x || p1.get(i).y != p2.get(i).y) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private List<Point> getTurns(List<Point> path) {
+        List<Point> turnChemicalCells = new ArrayList<>();
+
+        path.add(0, this.start);
+        turnChemicalCells.add(path.get(1));
+
+        for(int i = 2; i < path.size(); i++) {
+            if(path.get(i-2).x == path.get(i-1).x && path.get(i-1).x != path.get(i).x) {
+                turnChemicalCells.add(path.get(i));
+            }
+            else if(path.get(i-2).y == path.get(i-1).y && path.get(i-1).y != path.get(i).y) {
+                turnChemicalCells.add(path.get(i));
+            }
+        }
+        turnChemicalCells.remove(new Point(this.start.x, this.start.y));
+        return turnChemicalCells;
+    }
+
+    class Node {
+        int x;
+        int y;
+        int turns;
+        String dir;
+        Node prev;
+
+        public Node() {
+            this.x = 0;
+            this.y = 0;
+        }
+
+        public Node(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        public Node(int x, int y, int turns, String dir) {
+            this.x = x;
+            this.y = y;
+            this.turns = turns;
+            this.dir = dir;
+        }
+    }
+
+    /**
+     * Get shortest path from given start to target using BFS
+     *
+     * @param s                   the start point
+     * @param grid                game grid/map
+     * @return                    list of points showing shortest path from start to end
+     *
+     */
+    private List<Point> getShortestPath(Point s, ChemicalCell[][] grid) {
+        Queue<Node> queue = new LinkedList<Node>();
+        boolean[][] visited = new boolean[grid.length][grid[0].length];
+        Node start = new Node((int)s.getX(), (int)s.getY());
+        queue.add(start);
+        List<Point> path = new ArrayList<Point>();
+
+        while (!queue.isEmpty()) {
+            Node cur = queue.poll();
+            if (cur.x == target.x && cur.y == target.y) {
+                while (cur != null) {
+                    path.add(new Point(cur.x, cur.y));
+                    cur = cur.prev;
+                }
+                Collections.reverse(path);
+                break;
+            }
+            if (!visited[cur.x-1][cur.y-1]){
+                for (Node neighbor:getNeighbors(cur, grid, false))
+                    if (!visited[neighbor.x-1][neighbor.y-1])
+                        queue.add(neighbor);
+                visited[cur.x-1][cur.y-1] = true;
+            }
+        }
+
+        return path;
+    }
+
+    private List<Point> getOptimalPath(Point s, ChemicalCell[][] grid, Map<Point, List<Point>> allKTargetPaths, int nChemicals) {
+        Node start = new Node((int)s.getX(), (int)s.getY());
+        List<Point> finalPath = new ArrayList<Point>();
+
+        for (Node neighbor : getNeighbors(start, grid, true)) {
+            List<Point> directedPath = getOptimalDirectedPath(new Point(neighbor.x, neighbor.y), grid, allKTargetPaths, nChemicals);
+            if(finalPath.isEmpty()) finalPath = directedPath;
+            else {
+                if(getTurns(directedPath).size() <= nChemicals && finalPath.size()-1 > directedPath.size()) finalPath = directedPath;
+                if(getTurns(finalPath).size() > getTurns(directedPath).size()) finalPath = directedPath;
+            }
+        }
+        //System.out.println("FINAL: \n" + finalPath + "\n \n");
+
+        return finalPath;
+    }
+
+    private List<Point> getOptimalDirectedPath(Point s, ChemicalCell[][] grid, Map<Point, List<Point>> allKTargetPaths, int nChemicals) {
+        Queue<Node> queue = new LinkedList<Node>();
+        boolean[][] visited = new boolean[grid.length][grid[0].length];
+        Node start = new Node((int)s.getX(), (int)s.getY());
+        queue.add(start);
+        List<List<Point>> allPaths = new ArrayList<>();
+        List<Point> finalPath = new ArrayList<Point>();
+
+        while (!queue.isEmpty()) {
+            Node cur = queue.poll();
+            List<Point> path = new ArrayList<Point>();
+            if (cur.x == target.x && cur.y == target.y) {
+                Node tmp = cur;
+                while (cur != null) {
+                    path.add(new Point(cur.x, cur.y));
+                    cur = cur.prev;
+                }
+                cur = tmp;
+                Collections.reverse(path);
+                //System.out.println(path);
+                if(!allPaths.contains(path)) {
+                    allPaths.add(path);
+                    for(List<Point> tmpPath : allPaths) {
+                        if(finalPath.isEmpty()) finalPath = tmpPath;
+                        else {
+                            if(getTurns(tmpPath).size() <= nChemicals && finalPath.size() > tmpPath.size()) finalPath = tmpPath;
+                            if(getTurns(tmpPath).size() < getTurns(finalPath).size()) finalPath = tmpPath;
+                        }
+                    }
+                }
+            }
+            if (!visited[cur.x-1][cur.y-1]){
+                List<Node> neighbors = getNeighbors(cur, grid, true);
+                for (Node neighbor : neighbors) {
+                    if(neighbor.x != this.start.x || neighbor.y != this.start.y) queue.add(neighbor);
+                }
+                visited[cur.x-1][cur.y-1] = true;
+            }
+        }
+
+        //System.out.println(getTurns(finalPath) + "\n \n");
+        return finalPath;
+    }
+
+
+    /**
+     * Get available neighbors of a cell
+     *
+     * @param cur                 current cell represented by Node
+     * @param grid                game grid/map
+     * @return                    list of points showing shortest path from start to end
+     *
+     */
+    private List<Node> getNeighbors(Node cur, ChemicalCell[][] grid, boolean useTurns) {
+        List<Node> neighbors = new ArrayList<Node>();
+        int x = (int)cur.x-1;
+        int y = (int)cur.y-1;
+        if (x > 0 && grid[x-1][y].isOpen()) {
+            Node next = new Node(x, y+1);
+            if (useTurns) {
+                next.dir = "UP";
+                next.turns = cur.turns;
+                if (!next.dir.equals(cur.dir))
+                    next.turns++;
+            }
+            next.prev = cur;
+            neighbors.add(next);
+        }
+        if (y > 0 && grid[x][y-1].isOpen()) {
+            Node next = new Node(x+1, y);
+            if (useTurns) {
+                next.dir = "LEFT";
+                next.turns = cur.turns;
+                if (!next.dir.equals(cur.dir))
+                    next.turns++;
+            }
+            next.prev = cur;
+            neighbors.add(next);
+        }
+        if (x < grid.length-1 && grid[x+1][y].isOpen()) {
+            Node next = new Node(x+2, y+1);
+            if (useTurns) {
+                next.dir = "DOWN";
+                next.turns = cur.turns;
+                if (!next.dir.equals(cur.dir))
+                    next.turns++;
+            }
+            next.prev = cur;
+            neighbors.add(next);
+        }
+        if (y < grid.length-1 && grid[x][y+1].isOpen()) {
+            Node next = new Node(x+1, y+2);
+            if (useTurns) {
+                next.dir = "RIGHT";
+                next.turns = cur.turns;
+                if (!next.dir.equals(cur.dir))
+                    next.turns++;
+            }
+            next.prev = cur;
+            neighbors.add(next);
+        }
+        Comparator<Node> turnsComparatorWon = (Node n1, Node n2) ->
+        {return (n1.turns) - (n2.turns);};
+
+        Collections.sort(neighbors, turnsComparatorWon);
+
         return neighbors;
     }
 
-    // Testing the BFS (run with "java Controller" in chemotaxis/g1)
+    /**
+     * Get all paths from target to any cell within a given number of turns
+     *
+     * @param grid                game grid/map
+     * @param turns               number of turns allowed
+     * @return                    list of points showing shortest path from start to end
+     *
+     */
+    private Map<Point, List<Point>> getAllPathsFromTarget(ChemicalCell[][] grid, Integer turns) {
+        Queue<Node> queue = new LinkedList<Node>();
+        boolean[][] visited = new boolean[grid.length][grid[0].length];
+        Node start = new Node((int)this.target.getX(), (int)this.target.getY(), 0, "");
+        queue.add(start);
+        Map<Point, List<Point>> allPaths = new HashMap<Point, List<Point>>();
+
+        while (!queue.isEmpty()) {
+            Node cur = queue.poll();
+            Point curPoint = new Point(cur.x, cur.y);
+
+            if (cur.turns <= turns && !allPaths.containsKey(curPoint)) {
+                List<Point> path = new ArrayList<Point>();
+                Node temp = cur;
+                while (cur != null) {
+                    path.add(curPoint);
+                    cur = cur.prev;
+                }
+                Collections.reverse(path);
+                allPaths.put(curPoint, path);
+                cur = temp;
+            }
+
+            if (!visited[cur.x-1][cur.y-1]){
+                for (Node neighbor:getNeighbors(cur, grid, true))
+                    if (!visited[neighbor.x-1][neighbor.y-1])
+                        queue.add(neighbor);
+                visited[cur.x-1][cur.y-1] = true;
+            }
+        }
+        return allPaths;
+    }
+
+    // Testing the BFS (run with "java chemotaxis/g1/Controller" in /src)
     public static void main(String[] args) {
         Point start = new Point(1,1);
         Point target = new Point(5,5);
@@ -165,6 +405,59 @@ public class Controller extends chemotaxis.sim.Controller {
         grid[4][4]=open;
 
         List<Point> path = test.getShortestPath(start, grid);
+        System.out.println("START: 1, 1");
+        System.out.println("END: 5, 5");
+        System.out.println("SHORTEST PATH:");
         System.out.println(path);
+
+        int turns = 3;
+        Map<Point, List<Point>> allPaths = test.getAllPathsFromTarget(grid, turns);
+        // System.out.println(allPaths);
+        System.out.println("~~~~~~");
+
+        int[][] grid2 = new int[size][size];
+        grid2[0][0]=0;
+        grid2[0][1]=0;
+        grid2[0][2]=0;
+        grid2[0][3]=2;
+        grid2[0][4]=0;
+        grid2[1][0]=0;
+        grid2[1][1]=2;
+        grid2[1][2]=2;
+        grid2[1][3]=2;
+        grid2[1][4]=0;
+        grid2[2][0]=0;
+        grid2[2][1]=0;
+        grid2[2][2]=0;
+        grid2[2][3]=0;
+        grid2[2][4]=0;
+        grid2[3][0]=0;
+        grid2[3][1]=2;
+        grid2[3][2]=0;
+        grid2[3][3]=2;
+        grid2[3][4]=2;
+        grid2[4][0]=0;
+        grid2[4][1]=2;
+        grid2[4][2]=0;
+        grid2[4][3]=0;
+        grid2[4][4]=0;
+        System.out.println("GRID BEFORE (2's are blocked cells and 0's are free cells):");
+        for (int[] row:grid2) {
+            for (int col:row)
+                System.out.print(col +"  ");
+            System.out.println();
+        }
+        System.out.println("~~~~~~");
+
+        System.out.println("GRID AFTER (8's are cells that can reach end given " + turns + " turns):");
+        for (Point p:allPaths.keySet()) {
+            grid2[p.x-1][p.y-1]=8;
+        }
+        for (int[] row:grid2) {
+            for (int col:row)
+                System.out.print(col+"  ");
+            System.out.println();
+        }
+
     }
 }

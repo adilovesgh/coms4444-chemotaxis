@@ -54,6 +54,7 @@ public class Agent extends chemotaxis.sim.Agent {
         }
     }
 
+    // TODO: adjust color move to check for zig zag
     private Move colorMove(ArrayList<DirectionType> possibleDirections,
                                          DirectionType prevDir,
                                          DirectionType prevOrthDir,
@@ -72,6 +73,7 @@ public class Agent extends chemotaxis.sim.Agent {
         return buildMove(cellEntry.getKey(), previousState);
     }
 
+    // TODO: adjust to check for zig zag state
     private Move noColorMove(ArrayList<DirectionType> possibleDirections,
                                            DirectionType prevDir,
                                            DirectionType prevOrthDir,
@@ -116,6 +118,7 @@ public class Agent extends chemotaxis.sim.Agent {
         return colorCells;
     }
 
+    // TODO: adjust to take into account not changing previousState
     private Move buildMove(DirectionType dir, Byte previousState) {
         Move move = new Move();
         move.directionType = dir;
@@ -176,18 +179,10 @@ public class Agent extends chemotaxis.sim.Agent {
 
     private ArrayList<DirectionType> getPossibleDirections(Map<DirectionType, ChemicalCell> neighborMap) {
         ArrayList<DirectionType> directions = new ArrayList<>();
-        /*for (Map.Entry<DirectionType, ChemicalCell> cellEntry: neighborMap.entrySet()) {
+        for (Map.Entry<DirectionType, ChemicalCell> cellEntry: neighborMap.entrySet()) {
             ChemicalCell cell = cellEntry.getValue();
             if (cell.isOpen()) {
                 directions.add(cellEntry.getKey());
-            }
-        }*/
-        for (DirectionType dir: DirectionType.values()) {
-            if (dir != DirectionType.CURRENT) {
-                ChemicalCell cell = neighborMap.get(dir);
-                if (cell.isOpen()) {
-                    directions.add(dir);
-                }
             }
         }
         return directions;
