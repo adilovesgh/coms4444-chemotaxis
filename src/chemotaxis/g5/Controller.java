@@ -17,10 +17,13 @@ import chemotaxis.sim.SimPrinter;
 
 public class Controller extends chemotaxis.sim.Controller {
 
+	boolean isSolvedGame = true;
+	boolean isCrapShoot = false;
 	List<Point> routeList = new ArrayList<Point>();
 	List<Integer> corners = new ArrayList<Integer>();
+	Point agentPreviousLocation = new Point();
 	//int previousDirection;
-	boolean endReached = false;
+	
 	/**
 	 * Controller constructor
 	 *
@@ -55,36 +58,29 @@ public class Controller extends chemotaxis.sim.Controller {
 		ChemicalPlacement chemicalPlacement = new ChemicalPlacement();
 
 		if (currentTurn == 1) {
+
+			if (chemicalsRemaining == 0)
+				isCrapShoot = true;
+
  			routeList = getShortestPath(start, target, grid);
- 			/*
- 			System.out.println("Path before");
- 			for (Point p: routeList) {
- 				System.out.println(p.x+" "+p.y);
- 			}*/
  			routeList = recursiveImprovePath(routeList, grid);
- 			/*
- 			System.out.println("Path after");
- 			for (Point p: routeList) {
- 				System.out.println(p.x+" "+p.y);
- 			}*/
  			corners = getCorners(routeList);
- 			
- 			System.out.println("Corners before");
- 			for (int i: corners) {
- 				Point p = routeList.get(i);
- 				System.out.println(i+ ": "+p.x+" "+p.y);
- 			}
  			corners = getCornersImproved(routeList, corners, grid);
- 			System.out.println("Corners after");
+ 			/*
+ 			simPrinter.println("Corners before");
  			for (int i: corners) {
  				Point p = routeList.get(i);
  				System.out.println(i+ ": "+p.x+" "+p.y);
  			}
  			
- 			int needChemicals = corners.size()+1;
- 			if (needChemicals > chemicalsRemaining) {
- 				simPrinter.println("No enough chemicals, need: "+needChemicals+", have: "+chemicalsRemaining);
- 			}
+ 			simPrinter.println("Corners after");
+ 			for (int i: corners) {
+ 				Point p = routeList.get(i);
+ 				simPrinter.println(i+ ": "+p.x+" "+p.y);
+ 			}*/
+ 			
+ 			int needChemicals = corners.size();
+ 			
  			int initialDirection = nextDirection(routeList.get(1), currentLocation);
  			if (initialDirection == 1) {
  				chemicalPlacement.chemicals.add(ChemicalType.RED);
@@ -95,10 +91,32 @@ public class Controller extends chemotaxis.sim.Controller {
  			}
  			if (initialDirection != 4) {
  				chemicalPlacement.location = currentLocation;
+ 				needChemicals++;
  			}
- 			//previousDirection = initialDirection;
- 		}
-		else {
+
+ 			if (needChemicals > chemicalsRemaining) {
+ 				chemicalPlacement.chemicals.clear();
+ 				chemicalPlacement.chemicals.add(ChemicalType.BLUE);
+ 				chemicalPlacement.location = currentLocation;
+ 				switch (initialDirection) {
+ 					case 1:
+ 						chemicalPlacement.location.x -= 1;
+ 						break; 
+ 					case 2:
+ 						chemicalPlacement.location.y += 1;
+ 						break;
+ 					case 3:
+ 						chemicalPlacement.location.x += 1;
+ 						break;
+ 					case 4: 
+ 						chemicalPlacement.location.y -= 1;
+ 						break;
+ 				}
+ 				isSolvedGame = false;
+ 				simPrinter.println("No enough chemicals, need: "+needChemicals+", have: "+chemicalsRemaining);
+ 			}
+ 			
+ 		} else if (isSolvedGame) {
 			int corner = -1;
 			for (int i: corners) {
 				if (routeList.get(i).x == currentLocation.x && routeList.get(i).y == currentLocation.y) {
@@ -118,8 +136,51 @@ public class Controller extends chemotaxis.sim.Controller {
 				chemicalPlacement.location = currentLocation;
 				previousDirection = nextDirection;
 			}
-		}
 
+		} else if (!isSolvedGame) {
+
+			routeList = getShortestPath(currentLocation, target, grid);
+ 			routeList = recursiveImprovePath(routeList, grid);
+ 			corners = getCorners(routeList);
+ 			corners = getCornersImproved(routeList, corners, grid);
+ 			/*
+ 			simPrinter.println("Corners before");
+ 			for (int i: corners) {
+ 				Point p = routeList.get(i);
+ 				System.out.println(i+ ": "+p.x+" "+p.y);
+ 			}
+ 			
+ 			simPrinter.println("Corners after");
+ 			for (int i: corners) {
+ 				Point p = routeList.get(i);
+ 				simPrinter.println(i+ ": "+p.x+" "+p.y);
+ 			}*/
+ 			
+ 			int needChemicals = corners.size() + 1;
+
+ 			if (needChemicals <= chemicalsRemaining) {
+ 				simPrinter.println("SOOOLLLVVEDSHIT: NEED: "+needChemicals+", have: "+chemicalsRemaining);
+ 				simPrinter.println("prev location: "+agentPreviousLocation+", currentTurn: "+currentLocation);
+ 				isSolvedGame = true;
+	 			int previousDirection = nextDirection(currentLocation, agentPreviousLocation);
+	 			int nextDirection = nextDirection(routeList.get(1), currentLocation);
+	 			simPrinter.println("PrevDIR: "+previousDirection+", nextDir: "+nextDirection);
+	 			if (previousDirection - nextDirection == 1 || previousDirection - nextDirection == -3) {
+					chemicalPlacement.chemicals.add(ChemicalType.RED);
+				} else if (previousDirection - nextDirection == -1 || previousDirection - nextDirection == 3) {
+					chemicalPlacement.chemicals.add(ChemicalType.GREEN);
+				}
+				chemicalPlacement.location = currentLocation;
+			} else {
+ 				isSolvedGame = false;
+ 				//simPrinter.println("Not enough chemicals, need: "+needChemicals+", have: "+chemicalsRemaining);
+ 			}
+
+
+		} else if (isCrapShoot) {
+			return chemicalPlacement;
+		}
+		agentPreviousLocation = currentLocation;
 		return chemicalPlacement;
 	}
 	
