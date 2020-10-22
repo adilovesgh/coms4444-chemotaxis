@@ -1,15 +1,11 @@
 report:
-<<<<<<< HEAD
-	java -cp .:chemotaxis/org.json.jar chemotaxis.sim.Simulator --team r1 -r 100 -b 2 -m simple25.map -s 10 -l log.txt
-=======
-	java -cp .:chemotaxis/org.json.jar chemotaxis.sim.Simulator --team dummy -r 15 -b 50 -m 50x50CenterBarricade.map -v -s 10 -l log.txt
->>>>>>> upstream/master
+	java -cp .:chemotaxis/org.json.jar chemotaxis.sim.Simulator --team s2 -r 500 -b 2 -m 50x50ZigZag.map -s 10 -l log.txt
 
 verify:
 	java -cp .:chemotaxis/org.json.jar chemotaxis.sim.Simulator --team s1 -m simple25.map -c -v -l log.txt
 
 gui:
-	java -cp .:chemotaxis/org.json.jar chemotaxis.sim.Simulator --team r1 --gui -l log.txt
+	java -cp .:chemotaxis/org.json.jar chemotaxis.sim.Simulator --team s2 --gui -l log.txt
 
 compile:
 	javac -cp .:chemotaxis/org.json.jar chemotaxis/*/*.java
